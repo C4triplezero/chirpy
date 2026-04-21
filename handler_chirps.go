@@ -82,13 +82,13 @@ func (cfg *apiConfig) handlerChirpsGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *apiConfig) handlerChirpsGetByID(w http.ResponseWriter, r *http.Request) {
-	chirpID := r.PathValue("chirpID")
-	ID, err := uuid.Parse(chirpID)
+	chirpIDstring := r.PathValue("chirpID")
+	chirpID, err := uuid.Parse(chirpIDstring)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid chirp ID", err)
 		return
 	}
-	chirp, err := cfg.db.GetChirpByID(r.Context(), ID)
+	chirp, err := cfg.db.GetChirpByID(r.Context(), chirpID)
 	if err != nil {
 		respondWithError(w, http.StatusNotFound, "Chirp not found", err)
 		return
