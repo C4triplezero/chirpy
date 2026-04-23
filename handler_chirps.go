@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -70,10 +71,32 @@ func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request
 }
 
 func (cfg *apiConfig) handlerChirpsGet(w http.ResponseWriter, r *http.Request) {
-	chirps, err := cfg.db.GetChirps(r.Context())
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Error fetching chirps: ", err)
-		return
+	chirps, err := []database.Chirp{}, error(nil)
+	authorIDstring := r.URL.Query().Get("author_id")
+	if authorIDstring != "" {
+		authorID, err := uuid.Parse(authorIDstring)
+		if err != nil {
+			respondWithError(w, http.StatusBadRequest, "Invalid author ID", err)
+			return
+		}
+		chirps, err = cfg.db.GetChirpsByAuthorID(r.Context(), authorID)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, "Error fetching chirps: ", err)
+			return
+		}
+	} else {
+		chirps, err = cfg.db.GetChirps(r.Context())
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, "Error fetching chirps: ", err)
+			return
+		}
+	}
+
+	order := r.URL.Query().Get("sort")
+	if order == "desc" {
+		sort.Slice(chirps, func(i, j int) bool {
+			return chirps[i].CreatedAt.After(chirps[j].CreatedAt)
+		})
 	}
 
 	newchirps := []Chirp{}
